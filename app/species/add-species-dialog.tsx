@@ -61,7 +61,6 @@ const defaultValues: Partial<FormData> = {
 export default function AddSpeciesDialog({ userId }: { userId: string }) {
   const router = useRouter();
   const [open, setOpen] = useState<boolean>(false);
-
   const form = useForm<FormData>({
     resolver: zodResolver(speciesSchema),
     defaultValues,
