@@ -61,12 +61,14 @@ type FormData = z.infer<typeof speciesSchema>;
 
 export default function SpeciesCard(species: Species) {
 
+  const router = useRouter();
   const [learnMore, setLearnMore] = useState<boolean>(false);
   const [submitted, setSubmit] = useState<boolean>(false);
   const [editted, setEdit] = useState<boolean>(false);
   const [speciesData, setSpeciesData] = useState<Species | null>(null); // Initialize as null, stores fetched species data. 
   const [defaultData, setDefaultData] = useState<Species | null>(null); // Initialize as null, stores fetched species data.
-  const [sessionData, setSessionData] = useState<string>();
+  
+  let storedId : string = "";
 
   const form = useForm<FormData>({
     resolver: zodResolver(speciesSchema),
@@ -104,54 +106,70 @@ export default function SpeciesCard(species: Species) {
 
     const {data: currentId, error: authentication} = await supabase.auth.getUser()
 
-    console.log("NOW HERE IT IS.")
-    console.log(typeof(currentId))
-
     if (authentication)
     {
       return toast({
-        title: "You did not author this entry.",
+        title: "Authentication failed.",
         description: authentication.message,
         variant: "destructive",
       })
     }
     else{
-      setSessionData(currentId.user.id); 
-      console.log(sessionData);
+      console.log("successful");
+      storedId = currentId.user.id;
     }
     
-    const { data, error } = await supabase
+    const { data: returnedspecies, error: specieserror } = await supabase
       .from('species')
       .select('*')
-      .eq('author', sessionData)
+      .eq('author', storedId)
       .eq('scientific_name', species.scientific_name)
       .single(); // Specify the ID of the species to edit
+    
 
-    if (error) {
+    // this error is displaying!
+    if (specieserror) {
         return toast({
-          title: "You did not author this entry.",
-          description: error.message,
+          title: "You must author the entry to change it.",
+          description: specieserror.message,
           variant: "destructive",
         })
     }
     else 
     {
-      setDefaultData(data); // Store the retrieved data
+      setDefaultData(returnedspecies); // Store the retrieved data
       setEdit(true); // Show the dialog
     }
-    return data;
+    return specieserror;
   }
 
 
   const onSubmit = async (input: FormData) => {
     // The `input` prop contains data that has already been processed by zod. We can now use it in a supabase query
     const supabase = createClientComponentClient<Database>();
-    const router = useRouter();
 
-    const { error} = await supabase
+    const {data: currentId, error: authentication} = await supabase.auth.getUser()
+
+    if (authentication)
+    {
+      return toast({
+        title: "Authentication failed.",
+        description: authentication.message,
+        variant: "destructive",
+      })
+    }
+    if (await onEdit())
+    {
+      return toast({
+        title: "Can not modify other people's entries.",
+        variant: "destructive",
+      })
+    }
+
+    const {data, error} = await supabase
       .from('species')
       .update({
-        author: sessionData,
+        author: currentId.user.id,
         common_name: input.common_name,
         description: input.description,
         kingdom: input.kingdom,
@@ -171,12 +189,12 @@ export default function SpeciesCard(species: Species) {
 
     // Reset form values to the data values that have been processed by zod.
     // This way the user sees any changes that have occurred during transformation
-      form.reset(input);
-      setSubmit(true);
-
-      // Refresh all server components in the current route. This helps display the newly created species because species are fetched in a server component, species/page.tsx.
-      // Refreshing that server component will display the new species from Supabase
-      router.refresh();
+    console.log("Form submission successful");
+    form.reset(input);
+    setEdit(false);
+    console.log("Form reset and submit flag set to false");
+    router.refresh();
+    console.log("Router refreshed");
     };
 
   return (
@@ -223,7 +241,136 @@ export default function SpeciesCard(species: Species) {
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-        
+          <form onSubmit={(e: BaseSyntheticEvent) => void form.handleSubmit(onSubmit)(e)}>
+            <div className="grid w-full items-center gap-4">
+              <FormField
+                control={form.control}
+                name="scientific_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Scientific Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Cavia porcellus" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="common_name"
+                render={({ field }) => {
+                  // We must extract value from field and convert a potential defaultValue of `null` to "" because inputs can't handle null values: https://github.com/orgs/react-hook-form/discussions/4091
+                  const { value, ...rest } = field;
+                  return (
+                    <FormItem>
+                      <FormLabel>Common Name</FormLabel>
+                      <FormControl>
+                        <Input value={value ?? ""} placeholder="Guinea pig" {...rest} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+              <FormField
+                control={form.control}
+                name="kingdom"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Kingdom</FormLabel>
+                    {/* Using shadcn/ui form with enum: https://github.com/shadcn-ui/ui/issues/772 */}
+                    <Select onValueChange={(value) => field.onChange(kingdoms.parse(value))} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a kingdom" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectGroup>
+                          {kingdoms.options.map((kingdom, index) => (
+                            <SelectItem key={index} value={kingdom}>
+                              {kingdom}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="total_population"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Total population</FormLabel>
+                    <FormControl>
+                      {/* Using shadcn/ui form with number: https://github.com/shadcn-ui/ui/issues/421 */}
+                      <Input
+                        type="number"
+                        placeholder="300000"
+                        {...field}
+                        onChange={(event) => field.onChange(+event.target.value)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="image"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Image URL</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/George_the_amazing_guinea_pig.jpg/440px-George_the_amazing_guinea_pig.jpg"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => {
+                  // We must extract value from field and convert a potential defaultValue of `null` to "" because textareas can't handle null values: https://github.com/orgs/react-hook-form/discussions/4091
+                  const { value, ...rest } = field;
+                  return (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          value={value ?? ""}
+                          placeholder="The guinea pig or domestic guinea pig, also known as the cavy or domestic cavy, is a species of rodent belonging to the genus Cavia in the family Caviidae."
+                          {...rest}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+              <div className="flex">
+                <Button type="submit" className="ml-1 mr-1 flex-auto">
+                  Edit Species
+                </Button>
+                <Button
+                  type="button"
+                  className="ml-1 mr-1 flex-auto"
+                  variant="secondary"
+                  onClick={() => setEdit(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </form>
         </Form>
       </DialogContent>
     </Dialog>

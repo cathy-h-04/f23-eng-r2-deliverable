@@ -239,8 +239,7 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
                   type="button"
                   className="ml-1 mr-1 flex-auto"
                   variant="secondary"
-                  onClick={() => setOpen(false)}
-                >
+                  onClick={() => setOpen(false)}>
                   Cancel
                 </Button>
               </div>
