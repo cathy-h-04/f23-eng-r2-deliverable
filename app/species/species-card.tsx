@@ -181,7 +181,7 @@ export default function SpeciesCard(species: Species) {
       })
     }
 
-    const {data, error} = await supabase
+    const {error} = await supabase
       .from('species')
       .update({
         author: currentId.user.id,
