@@ -66,7 +66,7 @@ export default function SpeciesCard(species: Species) {
   const [speciesData, setSpeciesData] = useState<Species | null>(null); // Initialize as null, stores fetched species data. 
   const [defaultData, setDefaultData] = useState<Species | null>(null); // Initialize as null, stores fetched species data.
   
-  let storedId : string = "";
+  let storedId = "";
 
   const form = useForm<FormData>({
     resolver: zodResolver(speciesSchema),
@@ -115,7 +115,6 @@ export default function SpeciesCard(species: Species) {
       setEmail(user_info.email) //storing in email variable
       setLearnMore(true); // Show the dialog
     }
-    return data;
   };
 
   const onEdit = async () => {
@@ -155,7 +154,6 @@ export default function SpeciesCard(species: Species) {
       setDefaultData(returnedspecies); // Store the retrieved data
       setEdit(true); // Show the dialog
     }
-    return specieserror;
   }
 
 
@@ -170,13 +168,6 @@ export default function SpeciesCard(species: Species) {
       return toast({
         title: "Authentication failed.",
         description: authentication.message,
-        variant: "destructive",
-      })
-    }
-    if (await onEdit()) //another reminder that they can not submit. 
-    {
-      return toast({
-        title: "Can not modify other people's entries.",
         variant: "destructive",
       })
     }
