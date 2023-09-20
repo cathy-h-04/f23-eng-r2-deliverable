@@ -81,13 +81,7 @@ export default function SpeciesCard(species: Species) {
       .select("*")
       .eq("scientific_name", species.scientific_name)
       .single(); 
-
-      const { data: authorData, error: authorError } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", species.author) // Join using the 'author' field as the foreign key
-      .single();
-
+    
     if (error) {
       return toast({
         title: "Species not represented in database.",
@@ -95,6 +89,11 @@ export default function SpeciesCard(species: Species) {
         variant: "destructive",
       });
     }
+    const { data: authorData, error: authorError } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", data.author) // Join using the 'author' field as the foreign key
+    .single();
 
     if (authorError) {
       return toast({
