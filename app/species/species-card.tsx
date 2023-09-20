@@ -60,8 +60,8 @@ export default function SpeciesCard(species: Species) {
 
   const router = useRouter();
   const [learnMore, setLearnMore] = useState<boolean>(false);
-  const [author, setAuthor] = useState<String>("");
-  const [email, setEmail] = useState<String>("");
+  const [author, setAuthor] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
   const [editted, setEdit] = useState<boolean>(false);
   const [speciesData, setSpeciesData] = useState<Species | null>(null); // Initialize as null, stores fetched species data. 
   const [defaultData, setDefaultData] = useState<Species | null>(null); // Initialize as null, stores fetched species data.
