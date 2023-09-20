@@ -118,6 +118,7 @@ export default function SpeciesCard(species: Species) {
   };
 
   const onEdit = async () => {
+  // const onEdit: Promise<ResultType> => {
     // The `input` prop contains data that has already been processed by zod. We can now use it in a supabase query
     const supabase = createClientComponentClient<Database>()
 

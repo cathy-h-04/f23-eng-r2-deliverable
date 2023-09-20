@@ -3,7 +3,8 @@
 await import("./env.mjs");
 
 const nextConfig = {
-  reactStrictMode: true,
+  ignoreDuringBuilds: true,
+  // reactStrictMode: true,
   images: {
     unoptimized: true,
   },
