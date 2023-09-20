@@ -16,7 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import { useForm } from "react-hook-form";
+import { useForm} from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -24,13 +24,9 @@ import { useState, type BaseSyntheticEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Session } from '@supabase/supabase-js';
-
-console.log("HELLOOOOO");
 
 // We use zod (z) to define a schema for the "Add species" form.
 // zod handles validation of the input values with methods like .string(), .nullable(). It also processes the form inputs with .transform() before the inputs are sent to the database.
-
 const kingdoms = z.enum(["Animalia", "Plantae", "Fungi", "Protista", "Archaea", "Bacteria"]);
 
 const speciesSchema = z.object({
@@ -63,7 +59,8 @@ export default function SpeciesCard(species: Species) {
 
   const router = useRouter();
   const [learnMore, setLearnMore] = useState<boolean>(false);
-  const [submitted, setSubmit] = useState<boolean>(false);
+  const [author, setAuthor] = useState<String>("");
+  const [email, setEmail] = useState<String>("");
   const [editted, setEdit] = useState<boolean>(false);
   const [speciesData, setSpeciesData] = useState<Species | null>(null); // Initialize as null, stores fetched species data. 
   const [defaultData, setDefaultData] = useState<Species | null>(null); // Initialize as null, stores fetched species data.
@@ -85,16 +82,37 @@ export default function SpeciesCard(species: Species) {
       .eq("scientific_name", species.scientific_name)
       .single(); 
 
+      const { data: authorData, error: authorError } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", species.author) // Join using the 'author' field as the foreign key
+      .single();
+
     if (error) {
       return toast({
-        title: "Something went wrong.",
+        title: "Species not represented in database.",
         description: error.message,
+        variant: "destructive",
+      });
+    }
+
+    if (authorError) {
+      return toast({
+        title: "No record of author",
+        description: authorError.message,
         variant: "destructive",
       });
     }
     else
     {
-      setSpeciesData(data); // Store the retrieved data
+      const user_info = {
+        data, 
+        author: authorData.display_name,
+        email: authorData.email
+      }
+      setSpeciesData(data); // storing in species struct
+      setAuthor(user_info.author) //storing in author variable
+      setEmail(user_info.email) //storing in email variable
       setLearnMore(true); // Show the dialog
     }
     return data;
@@ -115,7 +133,6 @@ export default function SpeciesCard(species: Species) {
       })
     }
     else{
-      console.log("successful");
       storedId = currentId.user.id;
     }
     
@@ -126,8 +143,6 @@ export default function SpeciesCard(species: Species) {
       .eq('scientific_name', species.scientific_name)
       .single(); // Specify the ID of the species to edit
     
-
-    // this error is displaying!
     if (specieserror) {
         return toast({
           title: "You must author the entry to change it.",
@@ -158,7 +173,7 @@ export default function SpeciesCard(species: Species) {
         variant: "destructive",
       })
     }
-    if (await onEdit())
+    if (await onEdit()) //another reminder that they can not submit. 
     {
       return toast({
         title: "Can not modify other people's entries.",
@@ -170,18 +185,18 @@ export default function SpeciesCard(species: Species) {
       .from('species')
       .update({
         author: currentId.user.id,
-        common_name: input.common_name,
+        common_name: defaultData?.common_name,
         description: input.description,
         kingdom: input.kingdom,
         scientific_name: input.scientific_name,
         total_population: input.total_population,
         image: input.image,
       })
-      .eq('scientific_name', input.scientific_name); // Specify the ID of the species to edit
+      .eq('scientific_name', input.scientific_name); 
 
     if (error) {
       return toast({
-        title: "Something went wrong.",
+        title: "Could not update species.",
         description: error.message,
         variant: "destructive",
       });
@@ -189,12 +204,9 @@ export default function SpeciesCard(species: Species) {
 
     // Reset form values to the data values that have been processed by zod.
     // This way the user sees any changes that have occurred during transformation
-    console.log("Form submission successful");
     form.reset(input);
     setEdit(false);
-    console.log("Form reset and submit flag set to false");
     router.refresh();
-    console.log("Router refreshed");
     };
 
   return (
@@ -223,6 +235,8 @@ export default function SpeciesCard(species: Species) {
                     <p>Total Population: {speciesData.total_population}</p>
                     <p>Kingdom: {speciesData.kingdom}</p>
                     <p>Description: {speciesData.description}</p>
+                    <p>Author: {author}</p>
+                    <p>Email: {email}</p>
                   </>
                 )}
           </DialogDescription>
@@ -250,7 +264,7 @@ export default function SpeciesCard(species: Species) {
                   <FormItem>
                     <FormLabel>Scientific Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Cavia porcellus" {...field} />
+                      <Input placeholder={defaultData?.scientific_name}{...field}/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -266,7 +280,7 @@ export default function SpeciesCard(species: Species) {
                     <FormItem>
                       <FormLabel>Common Name</FormLabel>
                       <FormControl>
-                        <Input value={value ?? ""} placeholder="Guinea pig" {...rest} />
+                        <Input value={value ?? ""}  placeholder={defaultData?.common_name || undefined} {...rest} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -283,7 +297,7 @@ export default function SpeciesCard(species: Species) {
                     <Select onValueChange={(value) => field.onChange(kingdoms.parse(value))} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a kingdom" />
+                          <SelectValue placeholder={defaultData?.kingdom}  />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -364,8 +378,7 @@ export default function SpeciesCard(species: Species) {
                   type="button"
                   className="ml-1 mr-1 flex-auto"
                   variant="secondary"
-                  onClick={() => setEdit(false)}
-                >
+                  onClick={() => setEdit(false)}>
                   Cancel
                 </Button>
               </div>
