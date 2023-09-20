@@ -44,6 +44,7 @@ const speciesSchema = z.object({
     .trim()
     .min(1)
     .transform((val) => val?.trim()),
+  // endangered: z.boolean().optional(),
   total_population: z.number().int().positive().min(1).optional(),
   image: z
     .string()
@@ -175,6 +176,29 @@ export default function AddSpeciesDialog({ userId }: { userId: string }) {
                   </FormItem>
                 )}
               />
+              {/* <FormField
+                control={form.control}
+                name="endangered"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Endangered</FormLabel>
+                    <Select onValueChange={(value) => field.onChange(value === "true")} defaultValue={field.value ? 'true' : 'false'}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="True or false" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value={"true"}>True</SelectItem>
+                          <SelectItem value={"false"}>False</SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+                /> */}
               <FormField
                 control={form.control}
                 name="total_population"

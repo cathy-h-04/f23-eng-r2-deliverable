@@ -40,6 +40,7 @@ const speciesSchema = z.object({
     .nullable()
     .transform((val) => (val?.trim() === "" ? null : val?.trim())),
   kingdom: kingdoms,
+  // endangered: z.boolean().optional(),
   scientific_name: z
     .string()
     .trim()
@@ -79,7 +80,7 @@ export default function SpeciesCard(species: Species) {
     const { data, error } = await supabase
       .from("species")
       .select("*")
-      .eq("scientific_name", species.scientific_name)
+      .eq("scientific_name", species.scientific_name) 
       .single(); 
     
     if (error) {
@@ -92,7 +93,7 @@ export default function SpeciesCard(species: Species) {
     const { data: authorData, error: authorError } = await supabase
     .from("profiles")
     .select("*")
-    .eq("id", data.author) // Join using the 'author' field as the foreign key
+    .eq("id", data.author) // Join using species table's author as foreign key
     .single();
 
     if (authorError) {
@@ -187,6 +188,7 @@ export default function SpeciesCard(species: Species) {
         common_name: defaultData?.common_name,
         description: input.description,
         kingdom: input.kingdom,
+        // endangered: input.endangered,
         scientific_name: input.scientific_name,
         total_population: input.total_population,
         image: input.image,
@@ -233,6 +235,7 @@ export default function SpeciesCard(species: Species) {
                     <p>Common Name: {speciesData.common_name}</p>
                     <p>Total Population: {speciesData.total_population}</p>
                     <p>Kingdom: {speciesData.kingdom}</p>
+                    {/* <p>Endangered: {speciesData.endangered ? 'Yes' : 'No'}</p> */}
                     <p>Description: {speciesData.description}</p>
                     <p>Author: {author}</p>
                     <p>Email: {email}</p>
@@ -313,6 +316,29 @@ export default function SpeciesCard(species: Species) {
                   </FormItem>
                 )}
               />
+              {/* <FormField
+                control={form.control}
+                name="endangered"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Endangered</FormLabel>
+                    <Select onValueChange={(value) => field.onChange(value === "true")} defaultValue={field.value ? 'true' : 'false'}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="True or false" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value={"true"}>True</SelectItem>
+                          <SelectItem value={"false"}>False</SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+                /> */}
               <FormField
                 control={form.control}
                 name="total_population"
